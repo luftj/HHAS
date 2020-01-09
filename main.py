@@ -2,7 +2,9 @@ import json
 from shapely.geometry import Polygon
 
 if __name__ == "__main__":
-    inputfilepath = "feinkart_mitte_nutzung.geojson"#
+    district = "eims"
+
+    inputfilepath = "feinkart_"+district+"_nutzung.geojson"#
 
     features = []
     with open(inputfilepath) as inputfile:
@@ -15,8 +17,9 @@ if __name__ == "__main__":
         nutzung = feature["properties"]["nutzung"]
 
         if feature["geometry"]["type"] == "MultiPolygon":
+            if len(feature["geometry"]["coordinates"]) == 0:
+                continue
             for poly in feature["geometry"]["coordinates"][0]:
-                print(len(poly))
                 if(len(poly) <= 2):
                     continue
                 geom = Polygon(poly)
@@ -33,16 +36,18 @@ if __name__ == "__main__":
 
     print(areasums)
 
-    sumsum = 0
+    interest_sum = 0
+    total_sum = 0
     area_percent = {}
 
-    nutzung_ofinterest = ["Parkplatz","Fahrbahn","Ãœberfahrt","Feldweg","Radweg","Geh- und Radweg","FuÃŸgÃ¤ngerzone","Fahrbahn mit Schutzstreifen","Gehweg"]
+    nutzung_ofinterest = ["Parkplatz","Fahrbahn","Ãœberfahrt","Feldweg","Radweg","Geh- und Radweg","FuÃŸgÃ¤ngerzone","Fahrbahn mit Schutzstreifen","Gehweg","Radfahrstreifen","Bussonderstreifen"]
 
     for key in areasums:
         if key in nutzung_ofinterest:
-            sumsum += areasums[key]
+            interest_sum += areasums[key]
+        total_sum += areasums[key]
     
-    output_path = "out.csv"
+    output_path = "out_"+district+".csv"
     with open(output_path, "w") as outfile:
         for key in areasums:
             outfile.write(str(key))
@@ -50,6 +55,12 @@ if __name__ == "__main__":
             outfile.write(str(areasums[key]))
             if key in nutzung_ofinterest:
                 outfile.write(",")
-                percent = areasums[key] / sumsum
+                percent = areasums[key] / interest_sum
                 outfile.write(str(percent))
             outfile.write("\n")
+        outfile.write("verkehr,")
+        outfile.write(str(interest_sum))
+        outfile.write("\n")
+        outfile.write("gesamt,")
+        outfile.write(str(total_sum))
+        outfile.write("\n")
